@@ -1,19 +1,26 @@
 import { useState } from 'react';
 import SignIn from '../components/SignIn';
-import { Container, InputForm } from '../styles/Homepage';
+import { Container, SignInForm } from '../styles/Homepage';
 import OTP from '../components/OTP';
 
 export default function Home() {
-  const [isOTPReady, setOTPReady] = useState(true);
+  const [isOTPReady, setOTPReady] = useState(false);
+  const [username, setUsername] = useState('');
   return (
     <Container>
-      {isOTPReady ? <OTP /> : (
-        <InputForm>
+      {isOTPReady ? (
+        <OTP setOTPReady={setOTPReady} username={username} />
+      ) : (
+        <SignInForm>
           <div>
             <h1>Please enter your phone number</h1>
           </div>
-          <SignIn setOTPReady={setOTPReady} />
-        </InputForm>
+          <SignIn
+            setOTPReady={setOTPReady}
+            username={username}
+            setUsername={setUsername}
+          />
+        </SignInForm>
       )}
     </Container>
   );

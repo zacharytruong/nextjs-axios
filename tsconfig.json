@@ -15,6 +15,6 @@
     "jsx": "preserve",
     "incremental": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "libraries/ThemeContext.ts", "pages/_app.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "libraries/ThemeContext.tsx", "pages/_app.tsx", "libraries/validatorReducer.ts"],
   "exclude": ["node_modules"]
 }

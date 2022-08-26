@@ -1,14 +1,12 @@
 import { AxiosError } from 'axios';
 import {
   ChangeEvent,
-  Dispatch,
-  SetStateAction,
   SyntheticEvent,
-  useContext,
   useEffect,
+  useReducer,
   useState
 } from 'react';
-import AccountContext from '../libraries/AccountContext';
+import { useAccount } from '../libraries/AccountContext';
 import {
   cognitoInitiateAuth,
   cognitoInitiateAuthBody,
@@ -19,71 +17,101 @@ import countriesCodes from '../libraries/countryPhoneCodes';
 import {
   formatDisplayPhoneNumber,
   formatPhoneNumber
-} from '../libraries/formatPhoneNumber';
+} from '../libraries/formatter';
+import { ISignIn } from '../libraries/globalInterfaces';
 import { Container, FormInput, SubmitBtn } from '../styles/SignIn';
+import { ComponentLoading } from './Loading';
+import { validatePhoneNumbersReducer } from '../libraries/validatorReducer';
 
-interface IOTP {
-  setOTPReady: Dispatch<SetStateAction<boolean>>;
-}
-export default function SignIn({ setOTPReady }: IOTP) {
-  const { setSession } = useContext(AccountContext);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [phoneNumberOnly, setPhoneNumberOnly] = useState('');
+export default function SignIn({
+  setOTPReady,
+  username,
+  setUsername
+}: ISignIn) {
+  const { saveSession } = useAccount();
   const [countryCode, setCountryCode] = useState('+1');
-  const [username, setUsername] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [formattedPhoneNumber, setFormattedPhoneNumber] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const initialIsPhoneNumberValidState = {
+    value: phoneNumber,
+    isValid: false
+  };
+  const [isPhoneNumberValidState, dispatch] = useReducer(
+    validatePhoneNumbersReducer,
+    initialIsPhoneNumberValidState
+  );
 
   const selectChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setCountryCode(e.target.value);
   };
 
   const handlePhoneNumberInput = (e: ChangeEvent<HTMLInputElement>) => {
-    setPhoneNumberOnly(formatPhoneNumber(e.target.value));
-    setPhoneNumber(formatDisplayPhoneNumber(e.target.value));
+    setPhoneNumber(formatPhoneNumber(e.target.value));
+    setFormattedPhoneNumber(formatDisplayPhoneNumber(e.target.value));
   };
 
-  const signUpNewAccount = async () => {
-    try {
-      await cognitoSignUp.post(
-        '/',
-        cognitoSignUpBody(username, username)
-      );
-      console.log('Successfully sign up a new account!');
-    } catch (err: AxiosError | any) {
-      console.log('Failed to sign up a new account with Cognito', err);
-    }
-  };
-
-  // Auth (Start) workflow:
-  // 1. Request an initial auth call to Cognito
-  // 2. No error -> user exists, save Session token context, and send OTP.
-  // 3. Error -> if status === 400, user does not exist, sign up.
-  // 4. Error -> if status !== 400, network error, check console for more information.
-  const start = async (e: SyntheticEvent) => {
-    e.preventDefault();
+  const initialAuth = async () => {
     try {
       const res = await cognitoInitiateAuth.post(
         '/',
         cognitoInitiateAuthBody(username)
       );
-      setSession(res.data.Session);
-      setOTPReady(true);
+      saveSession(res.data.Session);
+      return res;
     } catch (err: AxiosError | any) {
       if (err.response.status === 400) {
-        await signUpNewAccount();
+        return err.response.status;
       } else {
         console.error('Failed to initate a network call to Cognito API', err);
       }
     }
   };
 
+  const signUpNewAccount = async () => {
+    try {
+      const res = await cognitoSignUp.post(
+        '/',
+        cognitoSignUpBody(username, username)
+      );
+      return res.status;
+    } catch (err: AxiosError | any) {
+      console.error(
+        'Failed to sign up a new account with Authentication Service Provider',
+        err
+      );
+    }
+  };
+
+  // SignUp / SignIn process
+  // Send an initiation auth request
+  // Returned status = 400 => phone number (account) does not exist
+  // => sign up => send initiation auth request again.
+  // Returned status = 200 => phone number (account exists)
+  // => save Session => show OTP form.
+  const start = async (e: SyntheticEvent) => {
+    e.preventDefault();
+    // dispatch({ type: countryCode, payload: phoneNumber });
+    // if (!isPhoneNumberValidState.isValid) {
+    //   return;
+    // }
+    setIsLoading(true);
+    const res = await initialAuth();
+    if (res.status === 400) {
+      await signUpNewAccount();
+      await initialAuth();
+    }
+    setIsLoading(false);
+    setOTPReady(true);
+  };
+
   // Update the "Username" when the country code OR phone number input change
   useEffect(() => {
-    setUsername(countryCode + phoneNumberOnly);
-  }, [countryCode, phoneNumberOnly]);
-
+    setUsername(countryCode + phoneNumber);
+  }, [countryCode, phoneNumber, setUsername]);
   return (
     <Container>
-      <form onSubmit={(e) => start(e)}>
+      <form onSubmit={start}>
         <FormInput>
           <select id="country-code" onChange={selectChange}>
             {countriesCodes &&
@@ -98,10 +126,12 @@ export default function SignIn({ setOTPReady }: IOTP) {
             id="phone-number"
             autoComplete="off"
             onChange={handlePhoneNumberInput}
-            value={phoneNumber}
+            value={formattedPhoneNumber}
           />
         </FormInput>
-        <SubmitBtn>Start</SubmitBtn>
+        <SubmitBtn disabled={isLoading ? true : false}>
+          {isLoading ? <ComponentLoading /> : 'Start'}
+        </SubmitBtn>
       </form>
     </Container>
   );

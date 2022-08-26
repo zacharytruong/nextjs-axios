@@ -32,4 +32,13 @@ export const FormInput = styled.div`
 export const SubmitBtn = styled.button`
   width: 100%;
   margin: 3rem auto 0 auto;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  &:disabled {
+    cursor: not-allowed;
+    &:hover {
+      opacity: 1;
+    }
+  }
 `;

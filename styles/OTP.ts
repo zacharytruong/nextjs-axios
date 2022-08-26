@@ -1,5 +1,5 @@
-import styled from "styled-components";
-import { device } from "../libraries/devices";
+import styled from 'styled-components';
+import { device } from '../libraries/devices';
 
 export const Container = styled.div`
   width: 37.7rem;
@@ -18,20 +18,39 @@ export const Container = styled.div`
     margin: 2rem auto;
     border-radius: 0.5rem;
   }
-`
+`;
 
-export const BtnContainer = styled.div`
+export const FormInput = styled.form`
   display: flex;
   flex-direction: column;
-  align-items: center;
+  select {
+    width: 30%;
+    text-align: center;
+  }
+  input {
+    font-size: 2.5rem;
+    letter-spacing: 1rem;
+    text-align: center;
+  }
   button {
-    margin: 1rem auto;
+    display: flex;
+    justify-content: center;
+    &:disabled {
+      cursor: not-allowed;
+      &:hover {
+        opacity: 1;
+      }
+    }
   }
-  button:hover {
-    opacity: 0.75;
-  }
+`;
+
+export const BtnContainer = styled.div`
   .cancel {
+    margin: 1rem auto;
     background: ${({ theme }) => theme.background};
     color: ${({ theme }) => theme.primary};
   }
-`
+  .cancel:hover {
+    opacity: 0.75;
+  }
+`;

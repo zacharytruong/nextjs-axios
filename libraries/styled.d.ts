@@ -5,9 +5,11 @@ import 'styled-components';
 declare module 'styled-components' {
   export interface DefaultTheme {
     primary: string;
+    hover: string;
     text: string;
     boxShadow: string;
     background: string;
+    loading: string;
     gradient: string;
     accent: string;
     customBackground: string;
